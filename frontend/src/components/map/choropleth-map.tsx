@@ -135,12 +135,15 @@ export function ChoroplethMap({ geojsonUrl, values, scale, onSelect, isRate }: C
         map.setPaintProperty("choropleth-fill", "fill-color", "#334155");
         return;
       }
-      const expr: ExpressionSpecification = ["match", ["get", "geo_code"]];
+      // Built incrementally (unknown final length), so it can't satisfy the
+      // ExpressionSpecification tuple type until fully assembled — cast once
+      // at the call site instead of fighting the literal-tuple inference.
+      const expr: unknown[] = ["match", ["get", "geo_code"]];
       for (const v of values) {
         expr.push(v.geo_code, scale.colorFor(v.value));
       }
       expr.push("#334155");
-      map.setPaintProperty("choropleth-fill", "fill-color", expr);
+      map.setPaintProperty("choropleth-fill", "fill-color", expr as unknown as ExpressionSpecification);
     };
     if (map.isStyleLoaded()) applyPaint();
     else map.once("load", applyPaint);
