@@ -39,8 +39,9 @@ Si le dépôt GitHub n'existe pas encore, créez-le d'abord sur github.com (repo
 Le backend n'accepte par défaut que `localhost:3000`. Une fois l'URL Vercel connue :
 
 1. Sur Render, ouvrez le service backend → **Environment**.
-2. Réglez `CORS_ORIGINS` = `https://rgph2024.vercel.app` (l'URL Vercel exacte, sans slash final). Pour autoriser aussi les URLs de preview Vercel (`https://rgph2024-git-<branche>-<compte>.vercel.app`), séparez plusieurs origines par une virgule.
-3. Sauvegardez → Render redéploie automatiquement.
+2. Réglez `CORS_ORIGINS` = l'URL Vercel de production exacte, sans slash final (ex. `https://rgph2024-dashboard-mf5x.vercel.app`).
+3. Vercel génère aussi une URL différente (avec un hash) à chaque déploiement de preview — plutôt que de les lister une par une, réglez `CORS_ORIGIN_REGEX` avec un vrai motif regex, ex. `https://rgph2024-dashboard.*\.vercel\.app` (le `CORSMiddleware` de FastAPI ne supporte pas les wildcards `*` dans `CORS_ORIGINS`, seulement une correspondance exacte — d'où ce second réglage séparé).
+4. Sauvegardez → Render redéploie automatiquement.
 
 ## 5. Vérification finale
 

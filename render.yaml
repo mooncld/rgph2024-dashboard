@@ -9,3 +9,5 @@ services:
     envVars:
       - key: CORS_ORIGINS
         value: "https://YOUR-VERCEL-APP.vercel.app"
+      - key: CORS_ORIGIN_REGEX
+        value: "https://YOUR-VERCEL-PROJECT.*\\.vercel\\.app"
