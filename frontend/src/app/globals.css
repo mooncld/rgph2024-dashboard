@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f4f6fb;
+  --surface: 255 255 255;
+  --surface-glass: 255 255 255;
+  --foreground: #0b1120;
+  --muted: #5b6577;
+  --border: 226 232 244;
+  --accent: #2563eb;
+  --accent-2: #7c3aed;
+  --accent-3: #06b6d4;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --shadow-color: 15 23 42;
+}
+
+.dark {
+  --background: #05070d;
+  --surface: 17 22 34;
+  --surface-glass: 20 26 40;
+  --foreground: #eef1f8;
+  --muted: #8b93a7;
+  --border: 40 46 63;
+  --accent: #5b8cff;
+  --accent-2: #a78bfa;
+  --accent-3: #22d3ee;
+  --shadow-color: 0 0 0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-accent-3: var(--accent-3);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent),
+    radial-gradient(1000px 500px at 110% 10%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  min-height: 100dvh;
+}
+
+/* Glassmorphism surface used by KPI cards, panels, sidebar */
+.glass-panel {
+  background: color-mix(in srgb, rgb(var(--surface-glass)) 72%, transparent);
+  border: 1px solid color-mix(in srgb, rgb(var(--border)) 100%, transparent);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  box-shadow:
+    0 1px 1px color-mix(in srgb, rgb(var(--shadow-color)) 4%, transparent),
+    0 8px 24px -8px color-mix(in srgb, rgb(var(--shadow-color)) 18%, transparent);
+}
+
+.glass-panel-solid {
+  background: rgb(var(--surface));
+  border: 1px solid color-mix(in srgb, rgb(var(--border)) 100%, transparent);
+  box-shadow:
+    0 1px 1px color-mix(in srgb, rgb(var(--shadow-color)) 4%, transparent),
+    0 8px 24px -8px color-mix(in srgb, rgb(var(--shadow-color)) 18%, transparent);
+}
+
+.text-gradient {
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted) 40%, transparent);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.maplibregl-popup-content {
+  background: rgb(var(--surface)) !important;
+  color: var(--foreground) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.35) !important;
+}
+.maplibregl-popup-tip {
+  border-top-color: rgb(var(--surface)) !important;
+}

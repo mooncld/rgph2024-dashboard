@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: rgph2024-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: CORS_ORIGINS
+        value: "https://YOUR-VERCEL-APP.vercel.app"

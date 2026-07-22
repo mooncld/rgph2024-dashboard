@@ -1,0 +1,21 @@
+# Python / backend
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+backend/_*.txt
+backend/_*.json
+
+# Node / frontend
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+frontend/npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local tooling config (machine/session-specific, not app code)
+.claude/
+frontend/.claude/
