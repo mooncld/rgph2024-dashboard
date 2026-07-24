@@ -6,13 +6,18 @@ import { Download, FileSpreadsheet, FileText, Sparkles, X } from "lucide-react";
 import { api, type ChoroplethFeatureValue, type KpiValue } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { cn, formatNumber, formatPercent } from "@/lib/utils";
-import { INDICATORS, LEVELS, hasNoSexeBreakdown } from "@/lib/indicators";
+import { useIndicatorCatalog, LEVELS, hasNoSexeBreakdown, findEntry } from "@/lib/indicators";
 import { RankingBarChart } from "@/components/charts/ranking-bar-chart";
 import { GeoPicker } from "@/components/geo/geo-picker";
 
+const DEFAULT_CATEGORY = "Taux de chômage (%)";
+
 export default function ExplorateurPage() {
   const { milieu, sexe, setMilieu, setSexe } = useAppStore();
-  const [indicatorKey, setIndicatorKey] = useState("chomage");
+  const { rates, counts, loading: catalogLoading } = useIndicatorCatalog();
+  const options = useMemo(() => [...rates, ...counts], [rates, counts]);
+
+  const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [levelKey, setLevelKey] = useState("Préfecture/Province");
   const [parent, setParent] = useState<{ code: string; name: string } | null>(null);
   const [ageMin, setAgeMin] = useState<string>("");
@@ -23,11 +28,12 @@ export default function ExplorateurPage() {
   const [selectedKpi, setSelectedKpi] = useState<KpiValue | null>(null);
   const [insight, setInsight] = useState<string | null>(null);
 
-  const indicator = INDICATORS.find((i) => i.key === indicatorKey)!;
-  const effectiveSexe = hasNoSexeBreakdown(indicator) ? "ensemble" : sexe;
+  const indicator = findEntry(options, category) ?? options[0];
+  const effectiveSexe = indicator && hasNoSexeBreakdown(indicator) ? "ensemble" : sexe;
   const ageActive = ageMin !== "";
 
   useEffect(() => {
+    if (!indicator) return;
     setLoading(true);
     setSelected(null);
     setSelectedKpi(null);
@@ -36,14 +42,14 @@ export default function ExplorateurPage() {
       .then(setRanking)
       .catch(() => setRanking([]))
       .finally(() => setLoading(false));
-  }, [indicator.category, indicator.group, levelKey, parent?.code, milieu, effectiveSexe]);
+  }, [indicator, levelKey, parent?.code, milieu, effectiveSexe]);
 
   useEffect(() => {
-    if (!selected) return;
+    if (!selected || !indicator) return;
     const body = {
       category: indicator.category,
       group: indicator.group,
-      is_rate: indicator.isRate,
+      is_rate: indicator.is_rate,
       geo: [selected.code],
       milieu,
       sexe: effectiveSexe,
@@ -52,7 +58,7 @@ export default function ExplorateurPage() {
     };
     api.explore(body).then(setSelectedKpi).catch(() => setSelectedKpi(null));
 
-    if (indicator.isRate) {
+    if (indicator.is_rate) {
       api
         .insights(indicator.category, selected.code, milieu, effectiveSexe)
         .then((r) => setInsight((r as { insight?: string }).insight ?? null))
@@ -60,7 +66,7 @@ export default function ExplorateurPage() {
     } else {
       setInsight(null);
     }
-  }, [selected, indicator.category, indicator.group, indicator.isRate, milieu, effectiveSexe, ageActive, ageMin, ageMax]);
+  }, [selected, indicator, milieu, effectiveSexe, ageActive, ageMin, ageMax]);
 
   const chartData = useMemo(
     () => ranking.filter((r) => r.value !== null).map((r) => ({ name: r.geo_name, value: r.value as number, code: r.geo_code })),
@@ -74,7 +80,7 @@ export default function ExplorateurPage() {
       effectif_exact: r.exact_value,
       pourcentage: r.percentage,
     }));
-    await api.exportData(rows, format, `RGPH 2024 — ${indicator.label}`);
+    await api.exportData(rows, format, `RGPH 2024 — ${indicator?.category ?? ""}`);
   }
 
   return (
@@ -85,12 +91,30 @@ export default function ExplorateurPage() {
       <p className="text-sm text-muted mb-6">Combinez indicateur, géographie, sexe, milieu et âge — les résultats se recalculent en temps réel.</p>
 
       <div className="glass-panel rounded-2xl p-4 mb-6 flex flex-wrap items-center gap-2">
-        <select value={indicatorKey} onChange={(e) => setIndicatorKey(e.target.value)} className="rounded-full bg-foreground/5 px-4 py-2 text-sm outline-none cursor-pointer">
-          {INDICATORS.map((i) => (
-            <option key={i.key} value={i.key}>
-              {i.label}
-            </option>
-          ))}
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          disabled={catalogLoading}
+          className="rounded-full bg-foreground/5 px-4 py-2 text-sm outline-none cursor-pointer max-w-[260px]"
+        >
+          {rates.length > 0 && (
+            <optgroup label="Taux (%)">
+              {rates.map((i) => (
+                <option key={i.category} value={i.category}>
+                  {i.category}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {counts.length > 0 && (
+            <optgroup label="Effectifs">
+              {counts.map((i) => (
+                <option key={i.category} value={i.category}>
+                  {i.category}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
 
         <select value={levelKey} onChange={(e) => setLevelKey(e.target.value)} className="rounded-full bg-foreground/5 px-4 py-2 text-sm outline-none cursor-pointer">
@@ -122,7 +146,7 @@ export default function ExplorateurPage() {
           ))}
         </div>
 
-        <div className={cn("flex rounded-full bg-foreground/5 p-1 text-sm", hasNoSexeBreakdown(indicator) && "opacity-40 pointer-events-none")}>
+        <div className={cn("flex rounded-full bg-foreground/5 p-1 text-sm", indicator && hasNoSexeBreakdown(indicator) && "opacity-40 pointer-events-none")}>
           {(["ensemble", "masculin", "feminin"] as const).map((s) => (
             <button key={s} onClick={() => setSexe(s)} className={cn("rounded-full px-3 py-1.5 transition-colors", sexe === s ? "bg-accent text-white" : "text-muted")}>
               {s === "ensemble" ? "Ensemble" : s === "masculin" ? "Hommes" : "Femmes"}
@@ -166,7 +190,7 @@ export default function ExplorateurPage() {
         <div className="glass-panel rounded-2xl p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-medium">
-              Classement — {indicator.label} {parent ? `dans ${parent.name}` : "(national)"}
+              Classement — {indicator?.category} {parent ? `dans ${parent.name}` : "(national)"}
             </p>
             <div className="flex items-center gap-1.5">
               <button onClick={() => handleExport("csv")} className="text-muted hover:text-foreground p-1.5 rounded-lg hover:bg-foreground/5" title="Export CSV">
@@ -185,7 +209,7 @@ export default function ExplorateurPage() {
           ) : chartData.length === 0 ? (
             <div className="h-[420px] flex items-center justify-center text-sm text-muted">Aucune donnée pour cette combinaison de filtres.</div>
           ) : (
-            <RankingBarChart data={chartData} isRate={indicator.isRate} selectedCode={selected?.code} onSelect={(code, name) => setSelected({ code, name })} />
+            <RankingBarChart data={chartData} isRate={indicator?.is_rate ?? false} selectedCode={selected?.code} onSelect={(code, name) => setSelected({ code, name })} />
           )}
         </div>
 
@@ -196,9 +220,9 @@ export default function ExplorateurPage() {
               {selectedKpi ? (
                 <>
                   <p className="text-2xl font-semibold tabular-nums">
-                    {indicator.isRate && !ageActive ? formatPercent(selectedKpi.percentage) : formatNumber(selectedKpi.exact_value)}
+                    {indicator?.is_rate && !ageActive ? formatPercent(selectedKpi.percentage) : formatNumber(selectedKpi.exact_value)}
                   </p>
-                  {indicator.isRate && !ageActive && <p className="text-sm text-muted tabular-nums">{formatNumber(selectedKpi.exact_value)} exactement</p>}
+                  {indicator?.is_rate && !ageActive && <p className="text-sm text-muted tabular-nums">{formatNumber(selectedKpi.exact_value)} exactement</p>}
                   <p className="text-xs text-muted mt-2 leading-relaxed">{selectedKpi.calculation_method}</p>
                 </>
               ) : (

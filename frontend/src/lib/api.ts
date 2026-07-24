@@ -69,6 +69,14 @@ export interface ChoroplethFeatureValue {
   percentage: number | null;
 }
 
+export interface CatalogEntry {
+  group: "population" | "menages";
+  category: string;
+  sexe_scopes: string[];
+  is_rate: boolean;
+  has_standalone: boolean;
+}
+
 export const api = {
   executiveKpis: (geoCode = "NATIONAL") =>
     request<ExecutiveKpis>(`/api/kpi/executive?geo_code=${encodeURIComponent(geoCode)}`),
@@ -116,7 +124,8 @@ export const api = {
   insights: (category: string, geoCode: string, milieu = "ensemble", sexe = "ensemble") =>
     request(`/api/insights?category=${encodeURIComponent(category)}&geo_code=${encodeURIComponent(geoCode)}&milieu=${milieu}&sexe=${sexe}`),
 
-  indicators: (group?: string) => request(`/api/indicators${group ? `?group=${group}` : ""}`),
+  indicatorCatalog: (group?: string) =>
+    request<CatalogEntry[]>(`/api/indicators${group ? `?group=${group}` : ""}`),
 
   agePyramid: (geoCode = "NATIONAL", milieu = "ensemble") =>
     request<{ band: string; sort_key: number; hommes: number; femmes: number }[]>(
